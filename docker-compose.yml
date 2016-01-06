@@ -1,0 +1,7 @@
+test:
+  image: ubuntu:trusty
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /usr/local/bin/docker:/usr/local/bin/docker:ro
+    - ./:/opt/test:ro
+  working_dir: /opt/test
