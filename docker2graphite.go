@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func perror(err error) {
@@ -18,7 +19,7 @@ func perror(err error) {
 }
 
 func fakeDial(proto, addr string) (conn net.Conn, err error) {
-	return net.Dial("unix", "/var/run/docker.sock")
+	return net.DialTimeout("unix", "/var/run/docker.sock", time.Duration(0))
 }
 
 func getJSON(c http.Client, url string, target *interface{}) error {
@@ -46,20 +47,25 @@ func main() {
 	tr := &http.Transport{
 		Dial: fakeDial,
 	}
-	client := &http.Client{Transport: tr}
+	timeout := time.Duration(5 * time.Second)
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   timeout,
+	}
 
 	var data interface{}
-	err := getJSON(*client, "http://unix.sock/containers/json", &data)
+	err := getJSON(*client, "http://unix.sock/containers/877fa0af21e6e26f271f2aeff671fe9a9025c42f431af1441a650e88b4b87bff/stats?stream=false", &data)
 	perror(err)
 
-	m := data.([]interface{})
+	m := data.(map[string]interface{}) //[]interface{}
 	for _, i := range m {
-		d := i.(map[string]interface{})
-		for k, v := range d {
-			if k == "Names" {
-				z := v.([]interface{})
-				fmt.Printf("%v.%v.running 1\n", *prefix, safeString(z[0].(string)))
-			}
-		}
+		fmt.Println(prefix, i)
+		//d := i.(map[string]interface{})
+		//for k, v := range d {
+		//	if k == "Names" {
+		//		z := v.([]interface{})
+		//		fmt.Printf("%v.%v.running 1\n", *prefix, safeString(z[0].(string)))
+		//	}
+		//}
 	}
 }
