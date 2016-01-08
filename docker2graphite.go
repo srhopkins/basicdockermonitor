@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net"
@@ -11,6 +10,25 @@ import (
 	"strings"
 	"time"
 )
+
+type containers struct {
+	ID         string                   `json:"Id"`
+	Names      []string                 `json:"Names"`
+	Image      string                   `json:"Image"`
+	Command    string                   `json:"Command"`
+	Created    int                      `json:"Created"`
+	Status     string                   `json:"Status"`
+	Ports      []map[string]interface{} `json:"Ports"`
+	Labels     map[string]string        `json:"Labels"`
+	SizeRw     int                      `json:"SizeRw"`
+	SizeRootFs int                      `json:"SizeRootFs"`
+}
+
+type containerCheckData struct {
+	Epoch int64
+	Host  string
+	Name  string
+}
 
 func perror(err error) {
 	if err != nil {
@@ -41,8 +59,8 @@ func safeString(s string) string {
 }
 
 func main() {
-	var prefix = flag.String("prefix", "docker2graphite", "Graphite prefix for metric names e.g. docker2graphite.prod")
-	flag.Parse()
+	//var prefix = flag.String("prefix", "docker2graphite", "Graphite prefix for metric names e.g. docker2graphite.prod")
+	//flag.Parse()
 
 	tr := &http.Transport{
 		Dial: fakeDial,
@@ -53,19 +71,32 @@ func main() {
 		Timeout:   timeout,
 	}
 
-	var data interface{}
-	err := getJSON(*client, "http://unix.sock/containers/877fa0af21e6e26f271f2aeff671fe9a9025c42f431af1441a650e88b4b87bff/stats?stream=false", &data)
+	//var running interface{}
+	var c []containers
+	err := getJSON(*client, "http://unix.sock/containers/json", &c)
 	perror(err)
 
-	m := data.(map[string]interface{}) //[]interface{}
-	for _, i := range m {
-		fmt.Println(prefix, i)
-		//d := i.(map[string]interface{})
-		//for k, v := range d {
-		//	if k == "Names" {
-		//		z := v.([]interface{})
-		//		fmt.Printf("%v.%v.running 1\n", *prefix, safeString(z[0].(string)))
-		//	}
-		//}
+	//var m []containers
+	if err := json.Unmarshal(running, &m); err != nil {
+		panic(err)
 	}
+	for _, i := range m {
+		fmt.Println(i.ID)
+	}
+
+	//var data interface{}
+	//err := getJSON(*client, "http://unix.sock/containers/877fa0af21e6e26f271f2aeff671fe9a9025c42f431af1441a650e88b4b87bff/stats?stream=false", &data)
+	//perror(err)
+
+	//m := data.(map[string]interface{}) //[]interface{}
+	//for _, i := range m {
+	//	fmt.Println(prefix, i)
+	//d := i.(map[string]interface{})
+	//for k, v := range d {
+	//	if k == "Names" {
+	//		z := v.([]interface{})
+	//		fmt.Printf("%v.%v.running 1\n", *prefix, safeString(z[0].(string)))
+	//	}
+	//}
+	//}
 }
